@@ -2,23 +2,18 @@ provider "aws" {
   region = "us-east-1"
 }
 
-variable "bucket_name" {
-  description = "The name of the S3 bucket"
-  type        = string
-  default     = "abishin-terraform-bucket-devops"
-}
-
 resource "aws_s3_bucket" "static_site" {
   bucket = var.bucket_name
 
   tags = {
-    Name = "StaticWebsite"
+    Name        = "MyStaticSiteBucket"
+    Environment = "Dev"
   }
 
   force_destroy = true
 }
 
-resource "aws_s3_bucket_website_configuration" "website" {
+resource "aws_s3_bucket_website_configuration" "static_site" {
   bucket = aws_s3_bucket.static_site.id
 
   index_document {
@@ -26,13 +21,12 @@ resource "aws_s3_bucket_website_configuration" "website" {
   }
 
   error_document {
-    key = "index.html"
+    key = "error.html"
   }
 }
 
-resource "aws_s3_bucket_public_access_block" "block" {
-  bucket = aws_s3_bucket.static_site.id
-
+resource "aws_s3_bucket_public_access_block" "public_access" {
+  bucket                  = aws_s3_bucket.static_site.id
   block_public_acls       = false
   block_public_policy     = false
   ignore_public_acls      = false
@@ -46,8 +40,9 @@ resource "aws_s3_bucket_policy" "public_read" {
     Version = "2012-10-17",
     Statement = [
       {
+        Sid       = "PublicReadGetObject",
         Effect    = "Allow",
-        Principal = "*",
+        Principal = "*",                            # ✅ Corrected here
         Action    = "s3:GetObject",
         Resource  = "${aws_s3_bucket.static_site.arn}/*"
       }
