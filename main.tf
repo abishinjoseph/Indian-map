@@ -2,25 +2,40 @@ provider "aws" {
   region = "us-east-1"
 }
 
+variable "bucket_name" {
+  description = "The name of the S3 bucket"
+  type        = string
+  default     = "abishin-terraform-bucket-devops"
+}
+
 resource "aws_s3_bucket" "static_site" {
   bucket = var.bucket_name
 
-  website {
-    index_document = "index.html"
-    error_document = "index.html"
-  }
-
   tags = {
     Name = "StaticWebsite"
+  }
+
+  force_destroy = true
+}
+
+resource "aws_s3_bucket_website_configuration" "website" {
+  bucket = aws_s3_bucket.static_site.id
+
+  index_document {
+    suffix = "index.html"
+  }
+
+  error_document {
+    key = "index.html"
   }
 }
 
 resource "aws_s3_bucket_public_access_block" "block" {
   bucket = aws_s3_bucket.static_site.id
 
-  block_public_acls   = false
-  block_public_policy = false
-  ignore_public_acls  = false
+  block_public_acls       = false
+  block_public_policy     = false
+  ignore_public_acls      = false
   restrict_public_buckets = false
 }
 
@@ -41,9 +56,8 @@ resource "aws_s3_bucket_policy" "public_read" {
 }
 
 resource "aws_s3_object" "index" {
-  bucket       = aws_s3_bucket.static_site.bucket
+  bucket       = aws_s3_bucket.static_site.id
   key          = "index.html"
   source       = "${path.module}/index.html"
-  acl          = "public-read"
   content_type = "text/html"
 }
